@@ -1,0 +1,39 @@
+name: Update Commit with Status History
+
+on:
+  status
+
+jobs:
+  update_commit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Update commit comment with status history
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          COMMIT_SHA="${{ github.event.sha }}"
+          NEW_STATUS="- $(date -u '+%Y-%m-%d %H:%M:%S UTC'): ${{ github.event.context }} - ${{ github.event.state }} - ${{ github.event.description }}"
+          
+          # Get existing comments
+          COMMENTS=$(gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/comments --jq '.[].body')
+          
+          # Check if we have a status update comment
+          STATUS_COMMENT=$(echo "$COMMENTS" | grep -m 1 "Status Update History:")
+          
+          if [ -z "$STATUS_COMMENT" ]; then
+            # Create new comment if none exists
+            COMMENT_BODY="Status Update History:
+          $NEW_STATUS"
+            gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/comments -f body="$COMMENT_BODY"
+          else
+            # Update existing comment
+            COMMENT_ID=$(gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/comments --jq '.[] | select(.body | startswith("Status Update History:")) | .id')
+            UPDATED_COMMENT="${STATUS_COMMENT}
+          $NEW_STATUS"
+            gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/comments/$COMMENT_ID -X PATCH -f body="$UPDATED_COMMENT"
+          fi
