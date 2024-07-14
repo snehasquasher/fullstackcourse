@@ -17,7 +17,8 @@ jobs:
                   -H "Content-Type: application/json" \
                   -H "SPUR_GITHUB_KEY: U2FsdGVkX1/TkqaDoQreZybTGRUNtJyNJDkwAmWUsNHk2PMDlaWBEXwO4LGU1uUY" \
                   -H "repo: snehasquasher/fullstackcourse" \
-                  -H "sha: 23c620ccbf6bc2063bda21db900f55e33d0977ad"  \
+                  -H "sha: {commit_sha}"  \
                   "https://spurserverwebappmulticore.azurewebsites.net/api/integrations/github/webhook?clientId=24&applicationId=25"
 
 # 🎈 Happy testing with Spur! 🎈
+#23c620ccbf6bc2063bda21db900f55e33d0977ad
