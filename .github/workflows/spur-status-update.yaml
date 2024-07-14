@@ -23,7 +23,7 @@ jobs:
 
       - name: Update commit comment with status history
         env:
-          ACCESS_TOKEN: ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}
+          GH_TOKEN: ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}
         run: | 
           COMMIT_SHA="${{ github.event.sha }}"
           echo "Commit SHA: $COMMIT_SHA"
