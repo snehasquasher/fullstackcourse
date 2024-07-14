@@ -13,8 +13,6 @@ jobs:
           fetch-depth: 0
 
       - name: Update commit comment with status history
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           COMMIT_SHA="${{ github.event.sha }}"
           NEW_STATUS="- $(date -u '+%Y-%m-%d %H:%M:%S UTC'): ${{ github.event.context }} - ${{ github.event.state }} - ${{ github.event.description }}"
