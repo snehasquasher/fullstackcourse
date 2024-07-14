@@ -23,7 +23,7 @@ jobs:
 
       - name: Update commit comment with status history
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACCESS_TOKEN: ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}
         run: |
           set -x  # Enable debug mode
           echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
