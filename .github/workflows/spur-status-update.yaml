@@ -6,17 +6,30 @@ on:
 jobs:
   update_commit:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      statuses: read
+      pull-requests: write
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
+      - name: Debug event
+        run: |
+          echo '${{ toJson(github.event) }}'
+
       - name: Update commit comment with status history
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -x  # Enable debug mode
+          echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+          
           COMMIT_SHA="${{ github.event.sha }}"
+          echo "Commit SHA: $COMMIT_SHA"
           NEW_STATUS="- $(date -u '+%Y-%m-%d %H:%M:%S UTC'): ${{ github.event.context }} - ${{ github.event.state }} - ${{ github.event.description }}"
           
           # Get existing comments
@@ -36,4 +49,9 @@ jobs:
             UPDATED_COMMENT="${STATUS_COMMENT}
           $NEW_STATUS"
             gh api repos/${{ github.repository }}/commits/$COMMIT_SHA/comments/$COMMENT_ID -X PATCH -f body="$UPDATED_COMMENT"
+          fi
+          
+          if [ $? -ne 0 ]; then
+            echo "Error occurred in script"
+            exit 1
           fi
