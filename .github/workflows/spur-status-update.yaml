@@ -17,7 +17,7 @@ jobs:
       - name: Extract Comments
         run: |
           status_event=$(cat $GITHUB_EVENT_PATH)
-          comments=$(echo "$status_event" | jq -r '.comment.text')
+          comments=$(echo "$status_event" | '.context.payload.comment.text // empty')
           echo "Comments in the status event: $comments"
       - name: Comment
         run: |
