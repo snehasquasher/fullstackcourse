@@ -12,7 +12,7 @@ jobs:
         run: |
           curl --request POST \
             --url "https://api.github.com/repos/$owner/$repo/commits/$commit_sha/comments" \
-            --header "Authorization: Bearer ${{ secrets.SPUR_GITHUB_STATUS_UPDATE}}" \
+            --header "Authorization: Bearer ${{ secrets.GITHUB_TOKEN}}" \
             --header "Content-Type: application/json" \
             --data '{
               "body": "success"
