@@ -53,6 +53,7 @@ jobs:
           #   # Create new comment if none exists
           #   COMMENT_BODY="Status Update History:
           COMMENT_BODY="success"
+          COMMENT_ID=$(gh api "repos/$REPO/commits/$COMMIT_SHA/comments" --jq '.[] | select(.body | startswith("Status Update History:")) | .id')
           gh api "repos/$REPO/commits/$COMMIT_SHA/comments/$COMMENT_ID" -X PATCH -f body="$UPDATED_COMMENT"
           # $NEW_STATUS"
           #   gh api "repos/$REPO/commits/$COMMIT_SHA/comments" -f body="$COMMENT_BODY"
