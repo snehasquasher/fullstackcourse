@@ -8,6 +8,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Extract Comments
+        run: |
+          status_event=$(cat $GITHUB_EVENT_PATH)
+          comments=$(echo "$status_event" | jq -r '.comment.text')
+          echo "Comments in the status event: $comments"
       - name: Comment
         run: |
           curl --request POST \
@@ -15,5 +20,5 @@ jobs:
             --header "Authorization: Bearer ${{ secrets.SPUR_STATUS_UPDATE_TOKEN}}" \
             --header "Content-Type: application/json" \
             --data '{
-              "body": "success"
+              "body": "'"$comment"'"
             }'
