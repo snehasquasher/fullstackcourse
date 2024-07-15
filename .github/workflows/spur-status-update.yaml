@@ -8,6 +8,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Extract Owner and Repo
+        run: |
+          IFS='/' read -r owner repo <<< "${GITHUB_REPOSITORY}"
+          echo "Repository Owner:$owner"
+          echo "Repository Name:$repo"
+        
       - name: Extract Comments
         run: |
           status_event=$(cat $GITHUB_EVENT_PATH)
@@ -20,5 +26,6 @@ jobs:
             --header "Authorization: Bearer ${{ secrets.SPUR_STATUS_UPDATE_TOKEN}}" \
             --header "Content-Type: application/json" \
             --data '{
-              "body": "'"$comment"'"
+              "body": "'"$comments"'"
             }'
+      
