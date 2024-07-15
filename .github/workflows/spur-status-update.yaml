@@ -11,7 +11,7 @@ jobs:
       - name: Comment
         run: |
           curl --request POST \
-            --url "https://api.github.com/repos/$owner/$repo/commits/$commit_sha/comments" \
+            --url "https://api.github.com/repos/snehasquasher/fullstackcourse/commits/c562d1d00028364a9a0ea06e62ba876612fc1059/comments" \
             --header "Authorization: Bearer ${{ secrets.SPUR_STATUS_UPDATE_TOKEN}}" \
             --header "Content-Type: application/json" \
             --data '{
