@@ -8,18 +8,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Extract PR Number
-        run: |
-          pr=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_SPUR_STATUS_UPDATE }}" "https://api.github.com/repos/$owner/$repo/commits/${{ github.sha }}" | jq -r '.pull_request.url' | cut -d'/' -f7)
-          echo "::set-env name=PR_NUMBER::$pr"
-
-      - name: Update PR Status
+      - name: Comment
         run: |
           curl --request POST \
-            --url "https://api.github.com/repos/{owner}/{repo}/pulls/$PR_NUMBER" \
+            --url "https://api.github.com/repos/$owner/$repo/commits/$commit_sha/comments" \
             --header "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             --header "Content-Type: application/json" \
             --data '{
-              "state": "success",
-              "description": "All checks passed"
+              "body": "'"$comment"'"
             }'
