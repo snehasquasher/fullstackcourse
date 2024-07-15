@@ -18,7 +18,10 @@ jobs:
         run: |
           status_event=$(cat $GITHUB_EVENT_PATH)
           echo "Contents of status_event: $status_event"
-          comments=$(echo "$status_event" | jq -r '.context.payload.comment.text // empty')
+          comments=$(echo "$status_event" | jq -r '.state')
+          if [ "$comments" = "null" ]; then
+            comments=""
+          fi
           echo "Comments in the status event: $comments"
       - name: Comment
         run: |
