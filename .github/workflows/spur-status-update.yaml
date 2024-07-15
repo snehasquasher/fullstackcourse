@@ -1,6 +1,6 @@
 name: Update PR Status and Generate Report
 on:
-  status
+  status #test
 
 jobs:
   update-pr-status-and-report:
