@@ -1,4 +1,4 @@
-name: Update PR Status and Generate Report
+name: Update PR Status and Generate Report!
 on:
   status
 
