@@ -58,23 +58,3 @@ jobs:
           echo "REPORT<<EOF" >> $GITHUB_ENV
           echo "$report" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-
-      - name: Comment PR with Report
-        env:
-          GITHUB_TOKEN: ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}
-        run: |
-          existing_comment=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
-                      "https://api.github.com/repos/$REPO/issues/$PR_NUMBER/comments" | \
-                      jq -r '.[] | select(.body | startswith("## Spur CI/CD Report")) | .id' | head -n1)
-          
-          if [ -n "$comment_url" ]; then
-            curl -X PATCH -H "Authorization: Bearer $GITHUB_TOKEN" \
-                 -H "Content-Type: application/json" \
-                 -d "{\"body\": $(echo "$REPORT" | jq -Rs .)}" \
-                 "$comment_url"
-          else
-            curl -X POST -H "Authorization: Bearer $GITHUB_TOKEN" \
-                 -H "Content-Type: application/json" \
-                 -d "{\"body\": $(echo "$REPORT" | jq -Rs .)}" \
-                 "https://api.github.com/repos/$REPO/issues/$PR_NUMBER/comments"
-          fi
