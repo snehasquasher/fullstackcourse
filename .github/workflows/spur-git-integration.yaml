@@ -4,7 +4,7 @@ name: Trigger Spur Webhook on Push 🔔
 on:
     push:
         branches:
-            - test_github_octo_inspired # 🌿 You can change this to your desired branch!!!
+            - test_github_octo_inspired # 🌿 You can change this to your desired branch!
 
 jobs:
     trigger_webhook:
