@@ -1,25 +1,27 @@
 name: Update PR Status and Generate Report
 on:
-  status #test
+  status
 
 jobs:
   update-pr-status-and-report:
     runs-on: ubuntu-latest
     steps:
-      - name: Extract Owner and Repo
+      - name: Extract Repository Info
         run: |
-           IFS='/' read -r owner repo <<< "${GITHUB_REPOSITORY}"
-           echo "Repository Owner:$owner"
-           echo "Repository Name:$repo"
+          echo "REPO=${{ github.repository }}" >> $GITHUB_ENV
+          echo "SHA=${{ github.sha }}" >> $GITHUB_ENV
+
       - name: Extract PR Number
         run: |
-          pr=$(curl -s -H "Authorization: Bearer ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}" "https://api.github.com/repos/{owner}/{repo}/commits/${{ github.sha }}" | jq -r '.pull_request.url' | cut -d'/' -f7)
-          echo "::set-env name=PR_NUMBER::$pr"
+          pr=$(curl -s -H "Authorization: Bearer ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}" \
+               "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}" | \
+               jq -r '.pull_request.url' | cut -d'/' -f7)
+          echo "PR_NUMBER=$pr" >> $GITHUB_ENV
 
       - name: Collect All Statuses
         run: |
           statuses=$(curl -s -H "Authorization: Bearer ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}" \
-                     "https://api.github.com/repos/${{ github.repository }}/commits/79ab41924cb89451c2a60c02607ddf472c126685/status")
+                     "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}/status")
           echo "STATUSES<<EOF" >> $GITHUB_ENV
           echo "$statuses" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
@@ -37,6 +39,7 @@ jobs:
           while read -r line; do
             context=$(echo "$line" | jq -r '.context')
             state=$(echo "$line" | jq -r '.state')
+            description=$(echo "$line" | jq -r '.description')
             url=$(echo "$line" | jq -r '.target_url')
             
             if [ "$state" == "success" ]; then
@@ -45,7 +48,7 @@ jobs:
               status_icon="Failed ❌"
             fi
             
-            report+="| $context | $status_icon | [click]($url) |\n"
+            report+="| $description | $status_icon | [click]($url) |\n"
           done < <(echo "$STATUSES" | jq -c '.statuses[]')
           
           report+="\ncommit sha: ${{ github.sha }}"
@@ -56,11 +59,11 @@ jobs:
 
       - name: Comment PR with Report
         env:
-          GITHUB_TOKEN: ${{ secrets.SPUR_STATUS_UPDATE_TOKEN  }}
+          GITHUB_TOKEN: ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}
         run: |
           comment_url=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
-                        "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/comments" | \
-                        jq -r '.[] | select(.body | startswith("🐙 Octomind")) | .url' | head -n1)
+                        "https://api.github.com/repos/$REPO/issues/$PR_NUMBER/comments" | \
+                        jq -r '.[] | select(.body | startswith("Spur")) | .url' | head -n1)
           
           if [ -n "$comment_url" ]; then
             curl -X PATCH -H "Authorization: Bearer $GITHUB_TOKEN" \
@@ -71,5 +74,5 @@ jobs:
             curl -X POST -H "Authorization: Bearer $GITHUB_TOKEN" \
                  -H "Content-Type: application/json" \
                  -d "{\"body\": $(echo "$REPORT" | jq -Rs .)}" \
-                 "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER/comments"
+                 "https://api.github.com/repos/$REPO/issues/$PR_NUMBER/comments"
           fi
