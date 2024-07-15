@@ -7,8 +7,8 @@ jobs:
   update_commit:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      statuses: read
+      contents: write
+      statuses: write
       pull-requests: write
 
     steps:
@@ -27,6 +27,15 @@ jobs:
         run: | 
           COMMIT_SHA="${{ github.event.sha }}"
           echo "Commit SHA: $COMMIT_SHA"
+
+          # Test GitHub CLI authentication
+          gh auth status
+          
+          # Test API access
+          gh api repos/$REPO --jq '.full_name'
+          
+          # Check rate limits
+          gh api rate_limit --jq '.resources.core'
           NEW_STATUS="- $(date -u '+%Y-%m-%d %H:%M:%S UTC'): ${{ github.event.context }} - ${{ github.event.state }} - ${{ github.event.description }}"
           
           # Get existing comments
