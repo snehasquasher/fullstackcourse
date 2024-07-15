@@ -26,7 +26,7 @@ jobs:
           GH_TOKEN: ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}
         run: | 
           # Extract commit SHA and repository
-          COMMIT_SHA="${{ github.event.sha }}"
+          COMMIT_SHA="66eed45b980c2dc60404255101a7b4c54d444d93"
           REPO="${{ github.repository }}"
           echo "Commit SHA: $COMMIT_SHA"
           echo "Repository: $REPO"
