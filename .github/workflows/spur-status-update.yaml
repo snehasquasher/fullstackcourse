@@ -1,72 +1,25 @@
-name: Update Commit with Status History
+name: Update PR Status
 
 on:
   status
 
 jobs:
-  update_commit:
+  update-pr-status:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      statuses: write
-      pull-requests: write
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Debug event
+      - name: Extract PR Number
         run: |
-          echo '${{ toJson(github.event) }}'
+          pr=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_SPUR_STATUS_UPDATE }}" "https://api.github.com/repos/$owner/$repo/commits/${{ github.sha }}" | jq -r '.pull_request.url' | cut -d'/' -f7)
+          echo "::set-env name=PR_NUMBER::$pr"
 
-      - name: Update commit comment with status history
-        env:
-          GH_TOKEN: ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}
-        run: | 
-          # Extract commit SHA and repository
-          COMMIT_SHA="66eed45b980c2dc60404255101a7b4c54d444d93"
-          REPO="${{ github.repository }}"
-          echo "Commit SHA: $COMMIT_SHA"
-          echo "Repository: $REPO"
-
-          # Test GitHub CLI authentication
-          gh auth status
-
-          # Test API access to repository
-          gh api "repos/$REPO" --jq '.full_name'
-          
-          # Check rate limits
-          gh api rate_limit --jq '.resources.core'
-
-          # Build new status update
-          # NEW_STATUS="- $(date -u '+%Y-%m-%d %H:%M:%S UTC'): ${{ github.event.context }} - ${{ github.event.state }} - ${{ github.event.description }}"
-          NEW_STATUS="success"
-          # Get existing comments on the commit
-          # COMMENTS=$(gh api "repos/$REPO/commits/$COMMIT_SHA/comments" --jq '.[].body')
-          COMMENTS="success"
-          # Check if we have a status update comment
-          # STATUS_COMMENT=$(echo "$COMMENTS" | grep -m 1 "Status Update History:")
-          STATUS_COMMENT="success"
-          # if [ -z "$STATUS_COMMENT" ]; then
-          #   # Create new comment if none exists
-          #   COMMENT_BODY="Status Update History:
-          COMMENT_BODY="success"
-          COMMENT_ID=$(gh api "repos/$REPO/commits/$COMMIT_SHA/comments" --jq '.[] | select(.body | startswith("Status Update History:")) | .id')
-          UPDATED_COMMENT="success"
-          gh api "repos/$REPO/commits/$COMMIT_SHA/comments/$COMMENT_ID" -X PATCH -f body="$UPDATED_COMMENT"
-          # $NEW_STATUS"
-          #   gh api "repos/$REPO/commits/$COMMIT_SHA/comments" -f body="$COMMENT_BODY"
-          # else
-          #   # Update existing comment
-          #   COMMENT_ID=$(gh api "repos/$REPO/commits/$COMMIT_SHA/comments" --jq '.[] | select(.body | startswith("Status Update History:")) | .id')
-          #   UPDATED_COMMENT="${STATUS_COMMENT}
-          # $NEW_STATUS"
-          #   gh api "repos/$REPO/commits/$COMMIT_SHA/comments/$COMMENT_ID" -X PATCH -f body="$UPDATED_COMMENT"
-          # fi
-          
-          # if [ $? -ne 0 ]; then
-          #   echo "Error occurred in script"
-          #   exit 1
-          # fi
+      - name: Update PR Status
+        run: |
+          curl --request POST \
+            --url "https://api.github.com/repos/{owner}/{repo}/pulls/$PR_NUMBER" \
+            --header "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            --header "Content-Type: application/json" \
+            --data '{
+              "state": "success",
+              "description": "All checks passed"
+            }'
