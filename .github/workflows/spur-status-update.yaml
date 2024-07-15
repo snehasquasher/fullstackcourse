@@ -1,4 +1,39 @@
-name: Update Comment
+# name: Update Comment
+
+# on:
+#   status
+
+# jobs:
+#   update-pr-status:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Extract Owner and Repo
+#         run: |
+#           IFS='/' read -r owner repo <<< "${GITHUB_REPOSITORY}"
+#           echo "Repository Owner:$owner"
+#           echo "Repository Name:$repo"
+        
+#       - name: Extract Comments
+#         run: |
+#           status_event=$(cat $GITHUB_EVENT_PATH)
+#           echo "Contents of status_event: $status_event"
+#           comments=$(echo "$status_event" | jq -r '.state')
+#           if [ "$comments" = "null" ]; then
+#             comments=""
+#           fi
+#           echo "Comments in the status event: $comments"
+#       - name: Comment
+#         run: |
+#           curl --request POST \
+#             --url "https://api.github.com/repos/snehasquasher/fullstackcourse/commits/c562d1d00028364a9a0ea06e62ba876612fc1059/comments" \
+#             --header "Authorization: Bearer ${{ secrets.SPUR_STATUS_UPDATE_TOKEN}}" \
+#             --header "Content-Type: application/json" \
+#             --data '{
+#               "body": "'"$comments"'"
+#             }'
+
+name: Update PR Status
 
 on:
   status
@@ -10,26 +45,21 @@ jobs:
     steps:
       - name: Extract Owner and Repo
         run: |
-          IFS='/' read -r owner repo <<< "${GITHUB_REPOSITORY}"
-          echo "Repository Owner:$owner"
-          echo "Repository Name:$repo"
-        
-      - name: Extract Comments
+           IFS='/' read -r owner repo <<< "${GITHUB_REPOSITORY}"
+           echo "Repository Owner:$owner"
+           echo "Repository Name:$repo"
+      - name: Extract PR Number
         run: |
-          status_event=$(cat $GITHUB_EVENT_PATH)
-          echo "Contents of status_event: $status_event"
-          comments=$(echo "$status_event" | jq -r '.state')
-          if [ "$comments" = "null" ]; then
-            comments=""
-          fi
-          echo "Comments in the status event: $comments"
-      - name: Comment
+          pr=$(curl -s -H "Authorization: Bearer ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}" "https://api.github.com/repos/{owner}/{repo}/commits/${{ github.sha }}" | jq -r '.pull_request.url' | cut -d'/' -f7)
+          echo "::set-env name=PR_NUMBER::$pr"
+
+      - name: Update PR Status
         run: |
           curl --request POST \
-            --url "https://api.github.com/repos/snehasquasher/fullstackcourse/commits/c562d1d00028364a9a0ea06e62ba876612fc1059/comments" \
-            --header "Authorization: Bearer ${{ secrets.SPUR_STATUS_UPDATE_TOKEN}}" \
+            --url "https://api.github.com/repos/{owner}/{repo}/pulls/$PR_NUMBER" \
+            --header "Authorization: Bearer ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}" \
             --header "Content-Type: application/json" \
             --data '{
-              "body": "'"$comments"'"
+              "state": "success",
+              "description": "All checks passed"
             }'
-      
