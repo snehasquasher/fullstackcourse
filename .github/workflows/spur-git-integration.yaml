@@ -2,7 +2,7 @@ name: Spur CI/CD Integration
 on:
   push:
     branches:
-      - test_github_final #change as required!!
+      - feat/spur-test
   status:
 
 jobs:
@@ -14,8 +14,8 @@ jobs:
         run: |
           curl -X POST \
           -H "Content-Type: application/json" \
-          -H "SPUR_GITHUB_KEY: U2FsdGVkX1/TkqaDoQreZybTGRUNtJyNJDkwAmWUsNHk2PMDlaWBEXwO4LGU1uUY" \
-          -H "repo: snehasquasher/fullstackcourse" \
+          -H "SPUR_GITHUB_KEY: ${{ secrets.SPUR_GITHUB_KEY }}" \
+          -H "repo: VecFlow/rossAI-demo/" \
           -H "sha: ${{ github.sha }}"  \
           "https://spurserverwebappmulticore.azurewebsites.net/api/integrations/github/webhook?clientId=24&applicationId=25"
 
@@ -40,10 +40,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}
         run: |
           statuses=$(gh api repos/${{ github.repository }}/commits/${{ github.sha }}/status)
-          # Filter out the "CICD - All tests" status
-          filtered_statuses=$(echo "$statuses" | jq '.statuses |= map(select(.context != "CICD - All tests"))')
           echo "STATUSES<<EOF" >> $GITHUB_ENV
-          echo "$filtered_statuses" >> $GITHUB_ENV
+          echo "$statuses" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Generate Report
@@ -72,6 +70,17 @@ jobs:
           echo "$report" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
+      - name: Check Overall Status
+        id: check_status
+        run: |
+          if [ "$success_count" -eq "$total_count" ]; then
+            echo "All tests passed."
+            echo "::set-output name=status::success"
+          else
+            echo "Some tests failed."
+            echo "::set-output name=status::failure"
+          fi
+
       - name: Update or Create Comment
         env:
           GITHUB_TOKEN: ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}
@@ -85,4 +94,13 @@ jobs:
             fi
           else
             echo "No associated PR found. Skipping comment update."
+          fi
+
+      - name: Set Commit Status
+        env:
+          GITHUB_TOKEN: ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}
+        run: |
+          status=${{ steps.check_status.outputs.status }}
+          if [ "$status" == "success" ]; then
+            gh api repos/${{ github.repository }}/statuses/${{ github.sha }} -f state=success -f context="CICD - All tests"
           fi
