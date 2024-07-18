@@ -1,31 +1,86 @@
 name: Spur CI/CD Integration
-
 on:
   push:
     branches:
-      - test_github_final
+      - test_github_octo_inspired
+  status:
 
 jobs:
-  trigger_webhook_and_report:
+  trigger_webhook:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Spur Webhook
+      - name: 📡 Curl Request to Trigger TestSuites on Spur
         run: |
           curl -X POST \
-            -H "Content-Type: application/json" \
-            -H "SPUR_GITHUB_KEY: U2FsdGVkX1/TkqaDoQreZybTGRUNtJyNJDkwAmWUsNHk2PMDlaWBEXwO4LGU1uUY" \
-            -H "repo: snehasquasher/fullstackcourse" \
-            -H "sha: ${{ github.sha }}" \
-            "https://spurserverwebappmulticore.azurewebsites.net/api/integrations/github/webhook?clientId=24&applicationId=25"
+          -H "Content-Type: application/json" \
+          -H "SPUR_GITHUB_KEY: U2FsdGVkX1/TkqaDoQreZybTGRUNtJyNJDkwAmWUsNHk2PMDlaWBEXwO4LGU1uUY" \
+          -H "repo: snehasquasher/fullstackcourse" \
+          -H "sha: ${{ github.sha }}"  \
+          "https://spurserverwebappmulticore.azurewebsites.net/api/integrations/github/webhook?clientId=24&applicationId=25"
 
-      - name: Wait for Statuses
+  update_pr_status_and_report:
+    if: github.event_name == 'status'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract Repository Info
         run: |
-          sleep 60  # Adjust this wait time as needed
-          
-      - name: Collect Statuses and Generate Report
+          echo "REPO=${{ github.repository }}" >> $GITHUB_ENV
+          echo "SHA=${{ github.sha }}" >> $GITHUB_ENV
+
+      - name: Extract PR Number
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}
         run: |
-          # Collect statuses
-          statuses=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
-            "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}/status")
+          pr=$(gh api repos/${{ github.repository }}/commits/${{ github.sha }} --jq .pull_request.number)
+          echo "PR_NUMBER=$pr" >> $GITHUB_ENV
+
+      - name: Collect All Statuses
+        env:
+          GITHUB_TOKEN: ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}
+        run: |
+          statuses=$(gh api repos/${{ github.repository }}/commits/${{ github.sha }}/status)
+          echo "STATUSES<<EOF" >> $GITHUB_ENV
+          echo "$statuses" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Generate Report
+        run: |
+          total_count=$(echo "$STATUSES" | jq '.total_count')
+          success_count=$(echo "$STATUSES" | jq '[.statuses[] | select(.state == "success")] | length')
+          
+          report="## Spur CI/CD Report\n\n"
+          report+="Test Report: $success_count/$total_count successful.\n\n"
+          report+="| Test Name | Status | Details |\n"
+          report+="|-----------|--------|--------|\n"
+          
+          while read -r line; do
+            context=$(echo "$line" | jq -r '.context')
+            state=$(echo "$line" | jq -r '.state')
+            url=$(echo "$line" | jq -r '.target_url')
+            
+            test_name=$(echo "$context" | sed 's/CICD - //')
+            
+            status_icon=$([ "$state" == "success" ] && echo "Passed ✅" || echo "Failed ❌")
+            
+            report+="| $test_name | $status_icon | [Details]($url) |\n"
+          done < <(echo "$STATUSES" | jq -c '.statuses[]')
+          
+          echo "REPORT<<EOF" >> $GITHUB_ENV
+          echo "$report" >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Update or Create Comment
+        env:
+          GITHUB_TOKEN: ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}
+        run: |
+          if [ -n "$PR_NUMBER" ]; then
+            if gh pr view $PR_NUMBER --json comments --jq '.comments[] | select(.body | startswith("## Spur CI/CD Report")) | .id' | grep -q .; then
+              comment_id=$(gh pr view $PR_NUMBER --json comments --jq '.comments[] | select(.body | startswith("## Spur CI/CD Report")) | .id' | head -n1)
+              gh pr comment $PR_NUMBER --edit-comment $comment_id -b "$REPORT"
+            else
+              gh pr comment $PR_NUMBER -b "$REPORT"
+            fi
+          else
+            echo "No associated PR found. Skipping comment update."
+          fi
