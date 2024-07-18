@@ -15,7 +15,7 @@ jobs:
           curl -X POST \
           -H "Content-Type: application/json" \
           -H "SPUR_GITHUB_KEY: ${{ secrets.SPUR_GITHUB_KEY }}" \
-          -H "repo: VecFlow/rossAI-demo/" \
+          -H "repo: snehasquasher/fullstackcourse /" \
           -H "sha: ${{ github.sha }}"  \
           "https://spurserverwebappmulticore.azurewebsites.net/api/integrations/github/webhook?clientId=24&applicationId=25"
 
