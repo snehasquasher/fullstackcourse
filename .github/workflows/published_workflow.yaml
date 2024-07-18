@@ -1,0 +1,11 @@
+name: Test Spur Report Action
+on: [push]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run Spur Report Action
+        uses: snehasquasher/spur-report-action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
