@@ -2,7 +2,7 @@ name: Spur CI/CD Integration
 on:
   push:
     branches:
-      - feat/spur-test
+      - test_github_final
   status:
 
 jobs:
