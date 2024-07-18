@@ -2,7 +2,7 @@ name: Spur CI/CD Integration
 on:
   push:
     branches:
-      - test_github_octo_inspired
+      - test_github_final #change as required!
   status:
 
 jobs:
