@@ -1,11 +1,11 @@
-name: Test Spur Report Action
-on: [push]
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Run Spur Report Action
-        uses: tryspur-dev/spur_github_actions@v1.0.0
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+# name: Test Spur Report Action
+# on: [push]
+# jobs:
+#   test:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v2
+#       - name: Run Spur Report Action
+#         uses: tryspur-dev/spur_github_actions@v1.0.0
+#         with:
+#           github-token: ${{ secrets.GITHUB_TOKEN }}
