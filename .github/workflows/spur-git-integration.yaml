@@ -1,106 +1,23 @@
-name: Spur CI/CD Integration
+# 🚀 Spur GitHub Actions Workflow
+name: Trigger Spur Webhook on Push 🔔
+
 on:
-  push:
-    branches:
-      - test_github_final
-  status:
+    push:
+        branches:
+            - test_github_final # 🌿 You can change this to your desired branch!!
 
-jobs:
-  trigger_webhook:
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - name: 📡 Curl Request to Trigger TestSuites on Spur
-        run: |
-          curl -X POST \
-          -H "Content-Type: application/json" \
-          -H "SPUR_GITHUB_KEY: ${{ secrets.SPUR_GITHUB_KEY }}" \
-          -H "repo: snehasquasher/fullstackcourse/" \
-          -H "sha: ${{ github.sha }}"  \
-          "https://spurserverwebappmulticore.azurewebsites.net/api/integrations/github/webhook?clientId=24&applicationId=25"
+jobs: 
+    trigger_webhook:
+        runs-on: ubuntu-latest
 
-  update_pr_status_and_report:
-    if: github.event_name == 'status'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Extract Repository Info
-        run: |
-          echo "REPO=${{ github.repository }}" >> $GITHUB_ENV
-          echo "SHA=${{ github.sha }}" >> $GITHUB_ENV
-
-      - name: Extract PR Number
-        env:
-          GITHUB_TOKEN: ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}
-        run: |
-          pr=$(gh api repos/${{ github.repository }}/commits/${{ github.sha }} --jq .pull_request.number)
-          echo "PR_NUMBER=$pr" >> $GITHUB_ENV
-
-      - name: Collect All Statuses
-        env:
-          GITHUB_TOKEN: ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}
-        run: |
-          statuses=$(gh api repos/${{ github.repository }}/commits/${{ github.sha }}/status)
-          echo "STATUSES<<EOF" >> $GITHUB_ENV
-          echo "$statuses" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
-      - name: Generate Report
-        run: |
-          total_count=$(echo "$STATUSES" | jq '.total_count')
-          success_count=$(echo "$STATUSES" | jq '[.statuses[] | select(.state == "success")] | length')
-          
-          report="## Spur CI/CD Report\n\n"
-          report+="Test Report: $success_count/$total_count successful.\n\n"
-          report+="| Test Name | Status | Details |\n"
-          report+="|-----------|--------|--------|\n"
-          
-          while read -r line; do
-            context=$(echo "$line" | jq -r '.context')
-            state=$(echo "$line" | jq -r '.state')
-            url=$(echo "$line" | jq -r '.target_url')
-            
-            test_name=$(echo "$context" | sed 's/CICD - //')
-            
-            status_icon=$([ "$state" == "success" ] && echo "Passed ✅" || echo "Failed ❌")
-            
-            report+="| $test_name | $status_icon | [Details]($url) |\n"
-          done < <(echo "$STATUSES" | jq -c '.statuses[]')
-          
-          echo "REPORT<<EOF" >> $GITHUB_ENV
-          echo "$report" >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-
-      - name: Check Overall Status
-        id: check_status
-        run: |
-          if [ "$success_count" -eq "$total_count" ]; then
-            echo "All tests passed."
-            echo "::set-output name=status::success"
-          else
-            echo "Some tests failed."
-            echo "::set-output name=status::failure"
-          fi
-
-      - name: Update or Create Comment
-        env:
-          GITHUB_TOKEN: ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}
-        run: |
-          if [ -n "$PR_NUMBER" ]; then
-            if gh pr view $PR_NUMBER --json comments --jq '.comments[] | select(.body | startswith("## Spur CI/CD Report")) | .id' | grep -q .; then
-              comment_id=$(gh pr view $PR_NUMBER --json comments --jq '.comments[] | select(.body | startswith("## Spur CI/CD Report")) | .id' | head -n1)
-              gh pr comment $PR_NUMBER --edit-comment $comment_id -b "$REPORT"
-            else
-              gh pr comment $PR_NUMBER -b "$REPORT"
-            fi
-          else
-            echo "No associated PR found. Skipping comment update."
-          fi
-
-      - name: Set Commit Status
-        env:
-          GITHUB_TOKEN: ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}
-        run: |
-          status=${{ steps.check_status.outputs.status }}
-          if [ "$status" == "success" ]; then
-            gh api repos/${{ github.repository }}/statuses/${{ github.sha }} -f state=success -f context="CICD - All tests"
-          fi
+        steps:
+            - name: 📡 Curl Request to Trigger TestSuites on Spur
+              run: |
+                  curl -X POST \
+                  -H "Content-Type: application/json" \
+                  -H "SPUR_GITHUB_KEY: U2FsdGVkX1/TkqaDoQreZybTGRUNtJyNJDkwAmWUsNHk2PMDlaWBEXwO4LGU1uUY" \
+                  -H "repo: snehasquasher/fullstackcourse" \
+                  -H "sha: ${{ github.sha }}"  \
+                  "https://spurserverwebappmulticore.azurewebsites.net/api/integrations/github/webhook?clientId=24&applicationId=25"
+# 🎈 Happy testing with Spur! 🎈
+#23c620ccbf6bc2063bda21db900f55e33d0977ad
