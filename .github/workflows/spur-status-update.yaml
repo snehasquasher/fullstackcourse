@@ -24,51 +24,63 @@ jobs:
           echo "STATUSES<<EOF" >> $GITHUB_ENV
           echo "$statuses" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-      - name: Generate Report
+       - name: Generate Report
         run: |
           total_count=$(echo "$STATUSES" | jq '.total_count')
           success_count=$(echo "$STATUSES" | jq '[.statuses[] | select(.state == "success")] | length')
           
-          report="Spur \n\n"
+          report="## Spur CI/CD Report\n\n"
           report+="Test Report: $success_count/$total_count successful.\n\n"
-          report+="| description | status | details |\n"
-          report+="|-------------|--------|--------|\n"
+          report+="| Test Name | Status | Details |\n"
+          report+="|-----------|--------|--------|\n"
           
           while read -r line; do
             context=$(echo "$line" | jq -r '.context')
             state=$(echo "$line" | jq -r '.state')
             url=$(echo "$line" | jq -r '.target_url')
             
-            if [ "$state" == "success" ]; then
-              status_icon="Passed ✅"
-            else
-              status_icon="Failed ❌"
-            fi
+            test_name=$(echo "$context" | sed 's/CICD - //')
             
-            report+="| $context | $status_icon | [click]($url) |\n"
+            status_icon=$([ "$state" == "success" ] && echo "Passed ✅" || echo "Failed ❌")
+            
+            report+="| $test_name | $status_icon | [Details]($url) |\n"
           done < <(echo "$STATUSES" | jq -c '.statuses[]')
-          
-          report+="\ncommit sha: ${{ github.sha }}"
           
           echo "REPORT<<EOF" >> $GITHUB_ENV
           echo "$report" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
+
+      - name: Check Overall Status
+        id: check_status
+        run: |
+          if [ "$success_count" -eq "$total_count" ]; then
+            echo "All tests passed."
+            echo "::set-output name=status::success"
+          else
+            echo "Some tests failed."
+            echo "::set-output name=status::failure"
+          fi
+
       - name: Update or Create Comment
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}
         run: |
-          comment_url=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
-                        "https://api.github.com/repos/$OWNER/$REPO/issues/$PR_NUMBER/comments" | \
-                        jq -r '.[] | select(.body | startswith("🐙 Octomind")) | .url' | head -n1)
-          
-          if [ -n "$comment_url" ]; then
-            curl -X PATCH -H "Authorization: Bearer $GITHUB_TOKEN" \
-                 -H "Content-Type: application/json" \
-                 -d "{\"body\": $(echo "$REPORT" | jq -Rs .)}" \
-                 "$comment_url"
+          if [ -n "$PR_NUMBER" ]; then
+            if gh pr view $PR_NUMBER --json comments --jq '.comments[] | select(.body | startswith("## Spur CI/CD Report")) | .id' | grep -q .; then
+              comment_id=$(gh pr view $PR_NUMBER --json comments --jq '.comments[] | select(.body | startswith("## Spur CI/CD Report")) | .id' | head -n1)
+              gh pr comment $PR_NUMBER --edit-comment $comment_id -b "$REPORT"
+            else
+              gh pr comment $PR_NUMBER -b "$REPORT"
+            fi
           else
-            curl -X POST -H "Authorization: Bearer $GITHUB_TOKEN" \
-                 -H "Content-Type: application/json" \
-                 -d "{\"body\": $(echo "$REPORT" | jq -Rs .)}" \
-                 "https://api.github.com/repos/$OWNER/$REPO/issues/$PR_NUMBER/comments"
+            echo "No associated PR found. Skipping comment update."
+          fi
+
+      - name: Set Commit Status
+        env:
+          GITHUB_TOKEN: ${{ secrets.SPUR_STATUS_UPDATE_TOKEN }}
+        run: |
+          status=${{ steps.check_status.outputs.status }}
+          if [ "$status" == "success" ]; then
+            gh api repos/${{ github.repository }}/statuses/${{ github.sha }} -f state=success -f context="CICD - All tests"
           fi
