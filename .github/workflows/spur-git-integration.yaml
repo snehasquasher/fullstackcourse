@@ -1,24 +1,75 @@
-# 🚀 Spur GitHub Actions Workflow
-name: Trigger Spur Webhook on Push 🔔
+name: Spur CI/CD Integration
 
 on:
-    push:
-        branches:
-            - test_github # 🌿 You can change this to your desired branch!!
+  push:
+    branches:
+      - test_github_final
 
-jobs: 
-    trigger_webhook:
-        runs-on: ubuntu-latest
+jobs:
+  trigger_webhook_and_report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Spur Webhook
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            -H "SPUR_GITHUB_KEY: U2FsdGVkX1/TkqaDoQreZybTGRUNtJyNJDkwAmWUsNHk2PMDlaWBEXwO4LGU1uUY" \
+            -H "repo: snehasquasher/fullstackcourse" \
+            -H "sha: ${{ github.sha }}" \
+            "https://spurserverwebappmulticore.azurewebsites.net/api/integrations/github/webhook?clientId=24&applicationId=25"
 
-        steps:
-            - name: 📡 Curl Request to Trigger TestSuites on Spur
-              run: |
-                  curl -X POST \
-                  -H "Content-Type: application/json" \
-                  -H "SPUR_GITHUB_KEY: U2FsdGVkX1/TkqaDoQreZybTGRUNtJyNJDkwAmWUsNHk2PMDlaWBEXwO4LGU1uUY" \
-                  -H "repo: snehasquasher/fullstackcourse" \
-                  -H "sha: ${{ github.sha }}"  \
-                  "https://spurserverwebappmulticore.azurewebsites.net/api/integrations/github/webhook?clientId=24&applicationId=25"
+      - name: Wait for Statuses
+        run: |
+          sleep 60  # Adjust this wait time as needed
 
-# 🎈 Happy testing with Spur! 🎈
-#23c620ccbf6bc2063bda21db900f55e33d0977ad
+      - name: Collect Statuses and Generate Report
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Extract owner and repo
+          IFS='/' read -r owner repo <<< "${{ github.repository }}"
+          
+          # Extract PR number
+          pr=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}/pulls" | \
+            jq -r '.[0].number')
+          
+          # Collect statuses
+          statuses=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/${{ github.repository }}/commits/${{ github.sha }}/status")
+          
+          # Generate report
+          total_count=$(echo "$statuses" | jq '.total_count')
+          success_count=$(echo "$statuses" | jq '[.statuses[] | select(.state == "success")] | length')
+          
+          report="Spur \n\n"
+          report+="Test Report: $success_count/$total_count successful.\n\n"
+          report+="| description | status | details |\n"
+          report+="|-------------|--------|--------|\n"
+          
+          echo "$statuses" | jq -c '.statuses[]' | while read -r line; do
+            context=$(echo "$line" | jq -r '.context')
+            state=$(echo "$line" | jq -r '.state')
+            url=$(echo "$line" | jq -r '.target_url')
+            status_icon=$([ "$state" == "success" ] && echo "Passed ✅" || echo "Failed ❌")
+            report+="| $context | $status_icon | [click]($url) |\n"
+          done
+          
+          report+="\ncommit sha: ${{ github.sha }}"
+          
+          # Update or create comment
+          comment_url=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$owner/$repo/issues/$pr/comments" | \
+            jq -r '.[] | select(.body | startswith("Spur")) | .url' | head -n1)
+          
+          if [ -n "$comment_url" ]; then
+            curl -X PATCH -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"body\": $(echo "$report" | jq -Rs .)}" \
+              "$comment_url"
+          else
+            curl -X POST -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"body\": $(echo "$report" | jq -Rs .)}" \
+              "https://api.github.com/repos/$owner/$repo/issues/$pr/comments"
+          fi
