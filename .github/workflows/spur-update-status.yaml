@@ -24,7 +24,8 @@ jobs:
           echo "STATUSES<<EOF" >> $GITHUB_ENV
           echo "$statuses" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
-       - name: Generate Report
+          
+      - name: Generate Report
         run: |
           total_count=$(echo "$STATUSES" | jq '.total_count')
           success_count=$(echo "$STATUSES" | jq '[.statuses[] | select(.state == "success")] | length')
