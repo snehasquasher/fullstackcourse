@@ -6,7 +6,7 @@ on:
         branches:
             - test_github_octo_inspired # 🌿 You can change this to your desired branch!
 
-jobs:
+jobs: 
     trigger_webhook: 
         runs-on: ubuntu-latest
 
