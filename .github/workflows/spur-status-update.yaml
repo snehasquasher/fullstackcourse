@@ -25,6 +25,28 @@ jobs:
           echo "STATUSES<<EOF" >> $GITHUB_ENV
           echo "$statuses" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
+      - name: Set Individual Statuses
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          status_count=0
+          while read -r line; do
+            context=$(echo "$line" | jq -r '.context')
+            state=$(echo "$line" | jq -r '.state')
+            description=$(echo "$line" | jq -r '.description')
+            target_url=$(echo "$line" | jq -r '.target_url // ""')
+            
+            gh api \
+              repos/${{ github.repository }}/statuses/${{ github.sha }} \
+              -f state="$state" \
+              -f target_url="$target_url" \
+              -f description="$description" \
+              -f context="$context"
+            
+            ((status_count++))
+          done < <(echo "$STATUSES" | jq -c '.statuses[]')
+          
+          echo "STATUS_COUNT=$status_count" >> $GITHUB_ENV
 
       - name: Generate Report
         run: |
