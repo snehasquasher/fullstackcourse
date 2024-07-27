@@ -1,7 +1,7 @@
 # 🚀 Spur GitHub Actions Workflow
 name: Trigger Spur Webhook on Push 🔔
  
-on:
+on: 
     push:
         branches:
             - test_github_octo_inspired # 🌿 You can change this to your desired branch!!
