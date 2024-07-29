@@ -15,7 +15,7 @@ jobs:
               run: |
                   nohup curl -X POST \
                   -H "Content-Type: application/json" \
-                  -H "SPUR_GITHUB_KEY: U2FsdGVkX18M5+rGuEBHwgvlwpw9llDiChjGbhgwOj3e3IcP+ABwsf/UdWzHtGWV" \
+                  -H "SPUR_GITHUB_KEY: U2FsdGVkX1/9Z6wQoYKAmLroZ0OC5TajFdZqyhjS+a/YzV5L1CTjJdQMEaDGckfL" \
                   -H "repo: snehasquasher/fullstackcourse" \
                   -H "sha: ${{ github.sha }}"  \
                   "https://spurserverwebappmulticore.azurewebsites.net/api/integrations/github/webhook" &
