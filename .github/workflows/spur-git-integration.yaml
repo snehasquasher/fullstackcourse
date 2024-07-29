@@ -8,7 +8,7 @@ on:
 
 jobs:  
     trigger_webhook: 
-        runs-on: ubuntu-latest
+        runs-on: ubuntu-latest 
 
         steps:
             - name: 📡 Curl Request to Trigger TestSuites on Spur
