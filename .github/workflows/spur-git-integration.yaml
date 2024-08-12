@@ -18,7 +18,7 @@ jobs:
                   -H "SPUR_GITHUB_KEY: U2FsdGVkX1/9Z6wQoYKAmLroZ0OC5TajFdZqyhjS+a/YzV5L1CTjJdQMEaDGckfL" \
                   -H "repo: snehasquasher/fullstackcourse" \
                   -H "sha: ${{ github.sha }}"  \
-                  "https://spurserverstaging.azurewebsites.net/api/integrations/github/webhook"
+                  "https://spurserverwebappmulticore.azurewebsites.net/api/integrations/github/webhook?override_url=http://www.google.com"
 
 # 🎈 Happy testing with Spur! 🎈
 #23c620ccbf6bc2063bda21db900f55e33d0977ad
