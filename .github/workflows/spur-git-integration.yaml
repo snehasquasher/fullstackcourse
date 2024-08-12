@@ -1,6 +1,6 @@
 # 🚀 Spur GitHub Actions Workflow
 name: Trigger Spur Webhook on Push 🔔
-   
+    
 on:   
     push:
         branches:
