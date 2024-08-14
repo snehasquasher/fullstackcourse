@@ -1,4 +1,4 @@
-# .github/workflows/set-preview-url.yml
+# .github/workflows/vercel-set-preview-url.yml
 name: Set Vercel Preview URL
 
 on:   
