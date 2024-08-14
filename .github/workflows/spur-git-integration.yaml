@@ -1,11 +1,12 @@
 # 🚀 Spur GitHub Actions Workflow
 name: Trigger Spur Webhook on Push 🔔
-    
-on:   
-    push:
-        branches:
-            - test_github_octo_inspired # 🌿 You can change this to your desired branch!!
- 
+
+on:
+  workflow_run:
+    workflows: ["Set Vercel Preview URL"]
+    types:
+      - completed
+      
 jobs:  
     trigger_webhook: 
         runs-on: ubuntu-latest  
