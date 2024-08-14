@@ -1,7 +1,7 @@
 # .github/workflows/vercel-set-preview-url.yml
 name: Set Vercel Preview URL
 
-on:   
+on:    
     push:
         branches:
             - test_github_octo_inspired # 🌿 You can change this to your desired branch!!
