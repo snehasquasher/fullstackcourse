@@ -7,7 +7,7 @@ on:
             - test_github_octo_inspired # 🌿 You can change this to your desired branch!!
  
 jobs:
-  set-vercel-preview-url:
+  set-vercel-preview-url: 
     runs-on: ubuntu-latest
     steps:
       
