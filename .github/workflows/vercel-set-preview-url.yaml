@@ -25,6 +25,9 @@ jobs:
           preview_url=$(echo $response | jq -r '.deployments[0].url')
           
           echo "Preview URL: $preview_url"
+
+          # Save the preview URL to a file
+          echo "$preview_url" > preview-url.txt
           
           # Set output variable
           echo "preview_url=$preview_url" >> $GITHUB_ENV
