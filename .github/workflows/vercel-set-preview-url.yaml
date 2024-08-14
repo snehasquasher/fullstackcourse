@@ -1,0 +1,36 @@
+# .github/workflows/set-preview-url.yml
+name: Set Vercel Preview URL
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  get-vercel-preview-url:
+    runs-on: ubuntu-latest
+    steps:
+      
+      - name: Get Vercel Preview URL
+        id: get-vercel-url
+        run: |
+          # Set variables
+          TEAM_ID=team_ewL8VcOU12xfMn45gOysWq70
+          API_TOKEN=tV9xwT1PMZXGomsaPcEJd3Hj
+          
+          # Fetch the latest deployment
+          response=$(curl -s -H "Authorization: Bearer $API_TOKEN" "https://api.vercel.com/v6/deployments?teamId=team_ewL8VcOU12xfMn45gOysWq70")
+          
+          # Extract the preview URL
+          preview_url=$(echo $response | jq -r '.deployments[0].url')
+          
+          echo "Preview URL: $preview_url"
+          
+          # Set output variable
+          echo "preview_url=$preview_url" >> $GITHUB_ENV
+
+      - name: Upload Preview URL as Artifact
+        uses: actions/upload-artifact@v3
+        with:
+            name: preview-url
+            path: preview-url.txt
