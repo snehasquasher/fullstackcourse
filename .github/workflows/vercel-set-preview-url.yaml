@@ -32,16 +32,17 @@ jobs:
           # Set output variable
           echo "preview_url=$preview_url" >> $GITHUB_ENV
 
-      - name: Upload Preview URL as Artifact
-        uses: actions/upload-artifact@v3
+      - name: Trigger spur webhook Workflow
+        uses: actions/github-script@v6
         with:
-            name: preview-url
-            path: preview-url.txt
-
-      - name: List Artifacts
-        run: |
-            echo "Artifacts available in the current workflow:"
-            curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            https://api.github.com/repos/${{ github.repository }}/actions/artifacts \
-            | jq '.artifacts[] | .name'
-
+          script: |
+            const previewUrl = process.env.preview_url;
+            github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'spur-git-integration.yaml',
+              ref: context.ref,
+              inputs: {
+                preview_url: previewUrl
+              }
+            });
