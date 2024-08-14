@@ -2,24 +2,21 @@
 name: Trigger Spur Webhook on Push 🔔
 
 on:
-  workflow_run:
-    workflows: ["Set Vercel Preview URL"]
-    types:
-      - completed
+  workflow_dispatch:
+    inputs:
+      preview_url:
+        description: 'Vercel Preview URL'
+        required: true
        
 jobs:  
     trigger_webhook: 
         runs-on: ubuntu-latest  
 
         steps:
-          - name: Download Preview URL Artifact
-            uses: actions/download-artifact@v3
-            with:
-              name: preview-url
 
           - name: Read and Use Preview URL
             run: |
-              preview_url=$(cat preview-url.txt)
+              preview_url=${{ github.event.inputs.preview_url }}
               echo "The preview URL is $preview_url"
 
           - name: 📡 Curl Request to Trigger TestSuites on Spur
