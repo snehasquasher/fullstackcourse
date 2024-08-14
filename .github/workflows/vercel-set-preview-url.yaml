@@ -8,7 +8,7 @@ on:
  
 jobs:
   set-vercel-preview-url: 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest 
     steps:
       
       - name: Set Vercel Preview URL
