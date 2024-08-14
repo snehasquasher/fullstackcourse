@@ -37,3 +37,11 @@ jobs:
         with:
             name: preview-url
             path: preview-url.txt
+
+      - name: List Artifacts
+        run: |
+            echo "Artifacts available in the current workflow:"
+            curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/actions/artifacts \
+            | jq '.artifacts[] | .name'
+
