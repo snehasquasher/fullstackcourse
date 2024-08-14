@@ -11,14 +11,24 @@ jobs:
         runs-on: ubuntu-latest  
 
         steps:
-            - name: 📡 Curl Request to Trigger TestSuites on Spur
-              run: |
+          - name: Download Preview URL Artifact
+            uses: actions/download-artifact@v3
+            with:
+              name: preview-url
+
+          - name: Read and Use Preview URL
+            run: |
+              preview_url=$(cat preview-url.txt)
+              echo "The preview URL is $preview_url"
+
+          - name: 📡 Curl Request to Trigger TestSuites on Spur
+            run: |
                   curl -X POST \
                   -H "Content-Type: application/json" \
                   -H "SPUR_GITHUB_KEY: U2FsdGVkX18M5+rGuEBHwgvlwpw9llDiChjGbhgwOj3e3IcP+ABwsf/UdWzHtGWV" \
                   -H "repo: snehasquasher/fullstackcourse" \
                   -H "sha: ${{ github.sha }}"  \
-                  -H "override_url:" \
+                  -H "override_url:$preview_url" \
                   "https://spurserverwebappmulticore.azurewebsites.net/api/integrations/github/webhook"
 
 # 🎈 Happy testing with Spur! 🎈
